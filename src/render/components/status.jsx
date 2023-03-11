@@ -1,7 +1,7 @@
 import statusGreen from "../assets/statusGreen.svg";
 import statusRed from "../assets/statusRed.svg";
 
-function fileStatus() {
+function Status({statusTitle, statusDescription}) {
   return (
     <div>
       <div className="flex justify-center h-full items-center">
@@ -11,10 +11,10 @@ function fileStatus() {
           </div>
           <div className="col-span-3">
             <p className="text-white font-roboto lg:text-[10pt] md:text-[8pt] ">
-              Current Status :
+              {statusTitle} :
             </p>
             <p className="text-palette-gray50 font-roboto lg:text-[10pt] md:text-[7pt]">
-              0 Detected Accident
+              {statusDescription}
             </p>
           </div>
         </div>
@@ -23,4 +23,4 @@ function fileStatus() {
   );
 }
 
-export default fileStatus;
+export default Status;
