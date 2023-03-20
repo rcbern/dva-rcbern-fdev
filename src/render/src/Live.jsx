@@ -1,5 +1,7 @@
-import ReturnButton from "../components/returnButton";
-import LiveDash from "../components/liveDash";
+import ReturnButton from "../components/common/returnButton";
+import LiveDash from "../components/live/liveDash";
+import Loading from "../components/common/loading";
+
 import { useRef, useState, useEffect, useCallback } from "react";
 import Webcam from "react-webcam";
 import * as tf from "@tensorflow/tfjs";
@@ -13,6 +15,7 @@ function live() {
   const [model, setModel] = useState(null);
   const [devices, setDevices] = useState([]);
   const [device, setDevice] = useState();
+  const [ready, setReady] = useState(false);
 
   const handleDevices = useCallback(
     (mediaDevices) =>
@@ -35,7 +38,7 @@ function live() {
   }, []);
 
   useEffect(() => {
-    const predict = async () => {
+    const predict = () => {
       if (
         model &&
         webcamRef.current &&
@@ -52,7 +55,21 @@ function live() {
             prediction = "No Accident Detected";
           } else {
             prediction = "Accident Detected";
-            window.electronAPI.addLog();
+            const canvas = document.createElement("canvas");
+            canvas.width = img.videoWidth;
+            canvas.height = img.videoHeight;
+            canvas
+              .getContext("2d")
+              .drawImage(img, 0, 0, canvas.width, canvas.height);
+            const imageDataURL = canvas.toDataURL();
+
+            window.electronAPI.addLog({
+              channel: "Live",
+              type: "RTSP",
+              origin: "rtsp://10.23.12.34:80",
+              imageDataURL: imageDataURL,
+            });
+
             window.electronAPI.getLogs();
             window.electronAPI.onLogsData((event, rows) => {
               console.log("Contents of the logs table:");
@@ -60,7 +77,6 @@ function live() {
               // Do something with the retrieved rows
             });
           }
-          // prediction = prediction[0] * 100 < 50 ? "No Accident Detected" : "Accident Detected";
 
           setPrediction(prediction);
           console.log(prediction, conf);
@@ -73,7 +89,7 @@ function live() {
 
   return (
     <div className="bg-black h-screen flex flex-col relative">
-      <div className="ml-auto z-10">
+      <div className="ml-auto z-10 absolute right-0">
         <label className="text-white mr-3">Camera Source</label>
         <select value={device} onChange={(e) => setDevice(e.target.value)}>
           {devices.map((option) => (
@@ -81,15 +97,16 @@ function live() {
           ))}
         </select>
       </div>
+      {model && ready ? null : <Loading message="Loading Model..." />}
       <Webcam
         className="absolute h-full w-full"
         ref={webcamRef}
         videoConstraints={{ deviceId: device }}
+        onUserMedia={() => setReady(true)}
       />
       <div className="absolute z-10 place-items-start 2xl:pl-10 lg:pl-8 md:pl-6 mt-5">
         <ReturnButton returnTitle="Live" to="/" />
       </div>
-
       <LiveDash detectionStatus={prediction} />
     </div>
   );
